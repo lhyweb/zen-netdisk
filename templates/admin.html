@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}{{ L['admin_panel'] }} · {{ site_title }}{% end %}
+{% block body %}
+<header class="topbar">
+  <div class="brand" onclick="showAbout()" title="{{ L['about_title'] }}">{{ site_title }} · {{ L['admin_panel'] }}</div>
+  <div class="spacer"></div>
+  <div class="menu">
+    <button class="btn" onclick="toggleDrop('userDrop', event)">{{ display_name }}{{ L['admin_tag'] }} ▾</button>
+    <div class="menu-drop" id="userDrop">
+      <a href="/settings">{{ L['my_settings'] }}</a>
+      <a href="/admin">{{ L['system_admin'] }}</a>
+      <div class="drop-sep">{{ L['lang_switch'] }}</div>
+      <a href="#" data-lang="zh" onclick="setLang('zh');return false">{{ L['lang_zh'] }}</a>
+      <a href="#" data-lang="en" onclick="setLang('en');return false">{{ L['lang_en'] }}</a>
+      <a href="#" onclick="showAbout();return false">{{ L['about'] }}</a>
+      <form method="post" action="/logout">
+        {% module xsrf_form_html() %}
+        <button type="submit" class="link-btn">{{ L['logout'] }}</button>
+      </form>
+    </div>
+  </div>
+  <a class="btn" href="/">{{ L['back'] }}</a>
+</header>
+
+<div class="tabs">
+  <button class="tab active" id="tabbtn-notice" onclick="showTab('notice')">{{ L['notice_tab'] }}</button>
+  <button class="tab" id="tabbtn-users" onclick="showTab('users')">{{ L['users_tab'] }}</button>
+  <button class="tab" id="tabbtn-logs" onclick="showTab('logs')">{{ L['logs_tab'] }}</button>
+  <button class="tab" id="tabbtn-recycle" onclick="showTab('recycle')">{{ L['recycle_tab'] }}</button>
+  {% if is_super_admin %}
+  <button class="tab" id="tabbtn-sys" onclick="showTab('sys')">{{ L['sys_tab'] }}</button>
+  {% end %}
+</div>
+
+<section id="tab-notice" class="panel">
+  <div class="card">
+    <h3>{{ L['global_notice'] }}</h3>
+    <p class="muted">{{ L['notice_desc'] }}</p>
+    <div class="field"><label>{{ L['title_label'] }}</label><input id="noticeTitle" maxlength="100" placeholder="{{ L['title_label'] }}"></div>
+    <div class="editor-toolbar">
+      <button class="btn sm" onclick="wrap('b','B')">B {{ L['edit'] }}</button>
+      <button class="btn sm" onclick="wrap('h3','H')">H</button>
+      <button class="btn sm" onclick="wrap('ul','•')">•</button>
+      <button class="btn sm" onclick="insertImg()">🖼️️</button>
+      <input type="file" id="noticeImg" accept="image/*" hidden onchange="uploadNoticeImg(this.files)">
+    </div>
+    <textarea id="noticeBody" rows="10" placeholder="{{ L['body_label'] }}"></textarea>
+    <div class="row">
+      <label style="min-width:auto"><input type="checkbox" id="noticeEnabled"> {{ L['notify_on_login'] }}</label>
+      <button class="btn primary" onclick="saveNotice()">{{ L['save_notice'] }}</button>
+      <span id="noticeMsg" class="hint"></span>
+    </div>
+  </div>
+</section>
+
+<section id="tab-users" class="panel hidden">
+  <div class="user-cols">
+    <div class="card">
+      <h3>{{ L['add_user'] }}</h3>
+      <div class="field"><label>{{ L['user_id_label'] }}</label><input id="nuName" placeholder="user01"></div>
+      <div class="field"><label>{{ L['display_name_label'] }}</label><input id="nuDisplay" maxlength="30"></div>
+      <div class="field"><label>{{ L['password'] }}</label><input id="nuPw" type="password"></div>
+      <div class="field"><label>{{ L['role_col'] }}</label>
+        <select id="nuRole">
+          <option value="admin">{{ L['role_admin'] }}</option>
+          <option value="user" selected>{{ L['role_user'] }}</option>
+          <option value="readonly">{{ L['role_readonly'] }}</option>
+          <option value="pending">{{ L['role_pending'] }}</option>
+        </select>
+      </div>
+      <div class="field"><label></label><button class="btn primary" onclick="addUser()">{{ L['add_user'] }}</button></div>
+    </div>
+    <div class="card">
+      <h3>{{ L['batch_add_user'] }}</h3>
+      <p class="muted">{{ L['batch_desc'] }}</p>
+      <textarea id="batchIds" rows="5" placeholder="{{ L['batch_ids'] }}"></textarea>
+      <div class="field"><label>{{ L['batch_pw'] }}</label><input id="batchPw" type="password"></div>
+      <div class="field"><label></label><button class="btn primary" onclick="addBatch()">{{ L['batch_submit'] }}</button></div>
+    </div>
+  </div>
+  <table class="flist">
+    <thead><tr><th>ID</th><th>{{ L['user_id_col'] }}</th><th>{{ L['display_name_label'] }}</th><th>{{ L['role_col'] }}</th><th>{{ L['actions_col'] }}</th></tr></thead>
+    <tbody id="userBody"></tbody>
+  </table>
+</section>
+
+<section id="tab-logs" class="panel hidden">
+  <table class="flist">
+    <thead><tr><th>{{ L['log_time'] }}</th><th>{{ L['log_user'] }}</th><th>{{ L['log_action'] }}</th><th>{{ L['log_path'] }}</th><th>{{ L['log_ip'] }}</th></tr></thead>
+    <tbody id="logBody"></tbody>
+  </table>
+</section>
+
+<section id="tab-recycle" class="panel hidden">
+  <p class="muted">{{ L['recycle_desc'] }}</p>
+  <table class="flist">
+    <thead><tr><th>{{ L['trash_name'] }}</th><th class="num">{{ L['trash_size'] }}</th><th class="num">{{ L['trash_time'] }}</th></tr></thead>
+    <tbody id="recycleBody"></tbody>
+  </table>
+</section>
+
+{% if is_super_admin %}
+<section id="tab-sys" class="panel hidden">
+  <div class="card">
+    <h3>{{ L['site_title_label'] }}</h3>
+    <div class="field">
+      <label>{{ L['title_label'] }}</label>
+      <input id="siteTitle" maxlength="40">
+      <button class="btn primary" onclick="saveSite()">{{ L['save'] }}</button>
+      <span id="siteMsg" class="hint"></span>
+    </div>
+  </div>
+  <div class="card">
+    <h3>{{ L['reset_system'] }}</h3>
+    <p class="muted">{{ L['reset_desc'] }}</p>
+    <button class="btn danger" onclick="resetSystem()">{{ L['reset_btn'] }}</button>
+  </div>
+</section>
+{% end %}
+
+
+<!-- 关于弹窗（品牌点击，作者信息） -->
+<div class="overlay hidden" id="aboutBox" onclick="if(event.target===this)closeAbout()">
+  <div class="modal">
+    <h3>{{ L['about_title'] }}</h3>
+    <pre id="aboutText" class="about-text"></pre>
+    <div class="row">
+      <button class="btn" onclick="closeAbout()">{{ L['close'] }}</button>
+    </div>
+  </div>
+</div>
+{% end %}

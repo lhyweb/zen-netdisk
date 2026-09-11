@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}文件 · {{ site_title }}{% end %}
+{% block body %}
+<header class="topbar">
+  <div class="brand" id="brandBtn" onclick="showAbout()" title="{{ L['about_title'] }}">{{ site_title }}</div>
+  <button class="btn" id="noticeBtn" onclick="openNotice()">{{ L['notice'] }}</button>
+  <div class="spacer"></div>
+  <input id="search" class="search" placeholder="{{ L['search_ph'] }}" onkeydown="if(event.key==='Enter')loadList()">
+  <div class="menu">
+    <button class="btn" onclick="toggleDrop('userDrop', event)">{{ display_name }}{% if current_user['role']=='readonly' %}{{ L['readonly_tag'] }}{% end %} ▾</button>
+    <div class="menu-drop" id="userDrop">
+      <a href="/settings">{{ L['my_settings'] }}</a>
+      {% if current_user['role'] == 'admin' %}
+      <a href="/admin">{{ L['system_admin'] }}</a>
+      {% end %}
+      <div class="drop-sep">{{ L['lang_switch'] }}</div>
+      <a href="#" data-lang="zh" onclick="setLang('zh');return false">{{ L['lang_zh'] }}</a>
+      <a href="#" data-lang="en" onclick="setLang('en');return false">{{ L['lang_en'] }}</a>
+      <a href="#" onclick="showAbout();return false">{{ L['about'] }}</a>
+      <form method="post" action="/logout">
+        {% module xsrf_form_html() %}
+        <button type="submit" class="link-btn">{{ L['logout'] }}</button>
+      </form>
+    </div>
+  </div>
+</header>
+
+<div class="pathbar">
+  {% if current_user['role'] != 'readonly' %}
+  <button class="btn primary" id="btnUpload" onclick="pickFiles()">{{ L['upload_file'] }}</button>
+  <div class="menu">
+    <button class="btn" onclick="toggleDrop('folderDrop', event)">{{ L['folder'] }} ▾</button>
+    <div class="menu-drop" id="folderDrop">
+      <a href="#" onclick="pickFolder();return false">{{ L['upload_folder'] }}</a>
+      <a href="#" onclick="mkdir();return false">{{ L['new_folder'] }}</a>
+    </div>
+  </div>
+  <input type="file" id="fileInput" multiple hidden onchange="uploadFiles(this.files)">
+  <input type="file" id="folderInput" webkitdirectory hidden onchange="uploadFolder(this.files)">
+  {% end %}
+  <div class="crumbs" id="crumbs"></div>
+  <div class="spacer"></div>
+  <span id="uploadHint" class="hint"></span>
+  <span id="batchBar" class="batch hidden">
+    <span id="selCount"></span>
+    <button class="btn sm" onclick="zipSelected()">{{ L['zip'] }}</button>
+    <button class="btn sm" onclick="setVis('public')">{{ L['set_public'] }}</button>
+    <button class="btn sm" onclick="setVis('private')">{{ L['set_private'] }}</button>
+    <button class="btn sm danger" onclick="delSelected()">{{ L['delete'] }}</button>
+    <button class="btn sm" onclick="clearSel()">{{ L['cancel'] }}</button>
+  </span>
+</div>
+
+<table class="flist">
+  <thead><tr>
+    <th class="ck"><input type="checkbox" id="checkAll" onchange="toggleAll(this.checked)"></th>
+    <th class="sortable" data-key="name" onclick="setSort('name')">{{ L['name'] }} <span class="smark" id="sm-name"></span></th>
+    <th class="num sortable" data-key="size" onclick="setSort('size')">{{ L['size'] }} <span class="smark" id="sm-size"></span></th>
+    <th class="num sortable" data-key="mtime" onclick="setSort('mtime')">{{ L['mtime'] }} <span class="smark" id="sm-mtime"></span></th>
+    <th class="sortable" data-key="owner" onclick="setSort('owner')">{{ L['owner'] }} <span class="smark" id="sm-owner"></span></th>
+    <th class="sortable" data-key="vis" onclick="setSort('vis')">{{ L['vis'] }} <span class="smark" id="sm-vis"></span></th>
+    <th class="ops">{{ L['ops'] }}</th>
+  </tr></thead>
+  <tbody id="fileBody"></tbody>
+</table>
+<div id="emptyTip" class="empty hidden">{{ L['empty_dir'] }}</div>
+
+<!-- 图片预览弹窗（毛玻璃背景 + 上一张/下一张） -->
+<div class="overlay hidden" id="lightbox" onclick="if(event.target===this)closeLightbox()">
+  <span class="close" onclick="closeLightbox()">✕</span>
+  <button class="lb-nav prev" id="lbPrev" onclick="lbPrev()" title="上一张">‹</button>
+  <button class="lb-nav next" id="lbNext" onclick="lbNext()" title="下一张">›</button>
+  <img id="lightboxImg" alt="预览">
+</div>
+
+<!-- 公告弹窗（宽度随内容自适应） -->
+<div class="overlay hidden" id="noticeBox" onclick="if(event.target===this)closeNotice()">
+  <div class="modal auto">
+    <h3 id="noticeTitle">{{ L['notice'] }}</h3>
+    <div id="noticeBody" class="notice-body"></div>
+    <div class="row">
+      <button class="btn" onclick="closeNotice()">{{ L['close'] }}</button>
+    </div>
+  </div>
+</div>
+
+<!-- 分享弹窗 -->
+<div class="overlay hidden" id="shareBox" onclick="if(event.target===this)hideShare()">
+  <div class="modal">
+    <h3>{{ L['share_title'] }}</h3>
+    <p class="muted">{{ L['share_desc'] }}</p>
+    <input id="shareUrl" readonly>
+    <div class="row">
+      <button class="btn primary" onclick="copyShare()">{{ L['copy_link'] }}</button>
+      <button class="btn" onclick="hideShare()">{{ L['close'] }}</button>
+    </div>
+  </div>
+</div>
+
+<!-- 文本预览 / 编辑弹窗 -->
+<div class="overlay hidden" id="textBox" onclick="if(event.target===this)hideText()">
+  <div class="modal wide">
+    <h3 id="textTitle">{{ L['text'] }}</h3>
+    <textarea id="textArea" rows="16" readonly></textarea>
+    <div class="row" id="textOps" style="display:none">
+      <button class="btn primary" onclick="saveText()">{{ L['save'] }}</button>
+      <button class="btn" onclick="hideText()">{{ L['cancel'] }}</button>
+    </div>
+  </div>
+</div>
+
+<!-- 关于弹窗（点击平台名 / 用户名下拉「关于」，作者信息，base64 存储） -->
+<div class="overlay hidden" id="aboutBox" onclick="if(event.target===this)closeAbout()">
+  <div class="modal auto">
+    <h3>{{ L['about_title'] }}</h3>
+    <div id="aboutText"></div>
+    <div class="row">
+      <button class="btn" onclick="closeAbout()">{{ L['close'] }}</button>
+    </div>
+  </div>
+</div>
+{% end %}

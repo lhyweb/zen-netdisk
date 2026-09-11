@@ -1,0 +1,16 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{{ site_title }}{% end %}</title>
+<link rel="stylesheet" href="/static/style.css?v=10">
+</head>
+<body>
+{% block body %}{% end %}
+<!-- 修改 app.js / style.css 后，把 ?v= 加 1（或让浏览器 Ctrl+F5 强制刷新），避免旧缓存 -->
+<script src="/static/lang_zh.js?v=11"></script>
+<script src="/static/lang_en.js?v=11"></script>
+<script src="/static/app.js?v=11"></script>
+</body>
+</html>

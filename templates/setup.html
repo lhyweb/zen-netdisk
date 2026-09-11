@@ -1,0 +1,31 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ L['setup_title'] }} · {{ site_title }}</title>
+<link rel="stylesheet" href="/static/style.css?v=10">
+</head>
+<body class="auth-body">
+<div class="auth-card">
+  <h1>{{ L['setup_title'] }}</h1>
+  <p class="muted">{{ L['setup_desc'] }}</p>
+  {% if error %}<div class="alert">{{ error }}</div>{% end %}
+  <form method="post">
+    {% module xsrf_form_html() %}
+    <label>{{ L['site_title_label'] }}</label>
+    <input name="site_title" value="{{ site_title_default }}" maxlength="40">
+    <label>{{ L['admin_account'] }}</label>
+    <input value="admin" readonly title="{{ L['admin_account'] }}">
+    <label>{{ L['user_display'] }}</label>
+    <input value="系统管理员" readonly title="{{ L['user_display'] }}">
+    <label>{{ L['pw_hint'] }}</label>
+    <input name="password" type="password" required autofocus>
+    <label>{{ L['confirm_pw'] }}</label>
+    <input name="confirm" type="password" required>
+    <button class="btn primary" type="submit">{{ L['create_login'] }}</button>
+  </form>
+</div>
+<script>sessionStorage.removeItem('noticeShown');</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ L['login'] }} · {{ site_title }}</title>
+<link rel="stylesheet" href="/static/style.css?v=10">
+</head>
+<body class="auth-body">
+<div class="auth-card">
+  <h1>{{ site_title }}</h1>
+  {% if error %}<div class="alert">{{ error }}</div>{% end %}
+  <form method="post">
+    {% module xsrf_form_html() %}
+    <label>{{ L['account'] }}</label>
+    <input name="username" required autofocus>
+    <label>{{ L['password'] }}</label>
+    <input name="password" type="password" required>
+    <button class="btn primary" type="submit">{{ L['login'] }}</button>
+  </form>
+  <a class="btn sso-btn" href="{{ sso_url }}">{{ L['sso_login'] }}</a>
+</div>
+<script>sessionStorage.removeItem('noticeShown');</script>
+</body>
+</html>

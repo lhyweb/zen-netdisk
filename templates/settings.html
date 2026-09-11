@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ L['my_settings'] }} · {{ site_title }}{% end %}
+{% block body %}
+<header class="topbar">
+  <div class="brand" onclick="showAbout()" title="{{ L['about_title'] }}">{{ site_title }}</div>
+  <div class="spacer"></div>
+  <div class="menu">
+    <button class="btn" onclick="toggleDrop('userDrop', event)">{{ display_name }} ▾</button>
+    <div class="menu-drop" id="userDrop">
+      <a href="/settings">{{ L['my_settings'] }}</a>
+      {% if current_user['role'] == 'admin' %}
+      <a href="/admin">{{ L['system_admin'] }}</a>
+      {% end %}
+      <div class="drop-sep">{{ L['lang_switch'] }}</div>
+      <a href="#" data-lang="zh" onclick="setLang('zh');return false">{{ L['lang_zh'] }}</a>
+      <a href="#" data-lang="en" onclick="setLang('en');return false">{{ L['lang_en'] }}</a>
+      <a href="#" onclick="showAbout();return false">{{ L['about'] }}</a>
+      <form method="post" action="/logout">
+        {% module xsrf_form_html() %}
+        <button type="submit" class="link-btn">{{ L['logout'] }}</button>
+      </form>
+    </div>
+  </div>
+  <a class="btn" href="/">{{ L['back'] }}</a>
+</header>
+
+<div class="settings-wrap">
+
+  <section class="card">
+    <h3>👤️ {{ L['my_profile'] }}</h3>
+    <div class="row"><label>{{ L['user_id_label'] }}</label><input id="myUsername" readonly></div>
+    <div class="row">
+      <label>{{ L['display_name_label'] }}</label>
+      <input id="myDisplayName" maxlength="30">
+      <button class="btn primary" onclick="saveDisplay()">{{ L['save'] }}</button>
+    </div>
+    <p class="muted">{{ L['display_hint'] }}</p>
+  </section>
+
+  <section class="card">
+    <h3>🔒️ {{ L['change_pw'] }}</h3>
+    <div class="row"><label>{{ L['old_pw'] }}</label><input id="oldPw" type="password"></div>
+    <div class="row"><label>{{ L['new_pw'] }}</label><input id="newPw" type="password"></div>
+    <div class="row">
+      <button class="btn primary" onclick="changePw()">{{ L['change_pw'] }}</button>
+      <span id="pwMsg" class="hint"></span>
+    </div>
+  </section>
+
+</div>
+
+<!-- 关于弹窗（品牌点击，作者信息） -->
+<div class="overlay hidden" id="aboutBox" onclick="if(event.target===this)closeAbout()">
+  <div class="modal">
+    <h3>{{ L['about_title'] }}</h3>
+    <pre id="aboutText" class="about-text"></pre>
+    <div class="row">
+      <button class="btn" onclick="closeAbout()">{{ L['close'] }}</button>
+    </div>
+  </div>
+</div>
+{% end %}
